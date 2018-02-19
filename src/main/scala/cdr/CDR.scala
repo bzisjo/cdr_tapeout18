@@ -107,7 +107,7 @@ class CDR(adc_width: Int = 5, fifo_width: Int = 8, space_counter_width: Int = 5,
       shiftreg_ptr := shiftreg_ptr - CR_adjust_res
       when (shiftreg_ptr < CR_adjust_res.U) {
         special_action := 1.U
-        extra_pausea := 1.U
+        extra_pause := 1.U
       }
     }
   }
