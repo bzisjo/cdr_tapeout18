@@ -1,8 +1,10 @@
-// See LICENSE for license details.
+// A fun CDR implementation
+// Jonathan Wang
 
 package cdr
 
 import chisel3._
+import chisel3.util._
 
 class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
   val io = IO(new Bundle {
@@ -15,17 +17,17 @@ class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, 
 
   val prev_isig = RegInit(0.S(adc_width.W))
   val start_CR = RegInit(false.B)
-  val zcross_detected = (prev_isig(adc_width-1) ^ isig(adc_width-1)).asBool
-  val zcross_loc = Wire(Bool(1.W))								      // Pseudo-interpolation. 0 for first half, 1 for second of one clock cycle
+  val zcross_detected = (prev_isig(adc_width-1) ^ io.isig(adc_width-1))
+  val zcross_loc = Wire(Bool())								      // Pseudo-interpolation. 0 for first half, 1 for second of one clock cycle
 
-  prev := io.isig                                       // Store prev signal value
+  prev_isig := io.isig                                       // Store prev signal value
 
   when (zcross_detected) {
   	start_CR := true.B											            // This register gets set once at the very beginning
-  	when (isig(adc_width-1) === 1.U) {							    // Zero Crossing && new point is negative
-  		zcross_loc := ((prev_isig + isig) >= 0.U)				  // Sum of prev and curr is >= 0 means zero crossing happens in the second half
+  	when (io.isig(adc_width-1) === 1.U) {							    // Zero Crossing && new point is negative
+  		zcross_loc := ((prev_isig + io.isig) >= 0.S)				  // Sum of prev and curr is >= 0 means zero crossing happens in the second half
   	} .otherwise {												              // Zero Crossing && new point is positive
-  		zcross_loc := ((prev_isig + isig) < 0.U)				  // Sum of prev and curr is < 0 means zero crossing happens in the second half
+  		zcross_loc := ((prev_isig + io.isig) < 0.S)				  // Sum of prev and curr is < 0 means zero crossing happens in the second half
   	}
   }.otherwise {
   	zcross_loc := false.B										            // This value is only used with zcross_detected, so nominally we set it to false with no side effects
@@ -45,7 +47,7 @@ class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, 
   	space_counter := 0.U(space_counter_width.W)					// ZC encountered, reset space_counter
   	data_noclk := Mux((space_counter + zcross_loc.asUInt) < IF_compare, 1.U, 0.U)
   }
-
+// TODO: VALIDATE TIMING
 
 
 
@@ -69,7 +71,7 @@ class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, 
   val last_bit = RegInit(0.U(1.W))
   val recovered_bit = Wire(UInt(1.W))
   val backup_sum_bit = RegInit(0.U(1.W))
-  val first_cycle_done = RegInit(0.U(1.W))
+  val first_cycle_done = RegInit(false.B)
 
   sym_period_counter := Mux(!start_CR || sym_period_counter === (shift_bits-1).U,
 							0.U,
@@ -80,27 +82,27 @@ class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, 
     data_sum := noclk_shiftreg(shiftreg_ptr)               // Don't care
     backup_sum := noclk_shiftreg(0.U)                      // Don't care
   } .elsewhen (sym_period_counter != 0.U) {
-    data_sum := data_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S(2.W), -1.S(2.W))
-    data_sum := data_sum + Mux(noclk_shiftreg(0.U) === 1.U, 1.S(2.W), -1.S(2.W))
+    data_sum := data_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
+    data_sum := data_sum + Mux(noclk_shiftreg(0.U) === 1.U, 1.S, -1.S)
   } .otherwise {
-    data_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S(2.W), -1.S(2.W))
-    backup_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S(2.W), -1.S(2.W))
+    data_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
+    backup_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   }
 
   when(!start_CR) {
     mid_sum := noclk_shiftreg(shiftreg_ptr)                // Don't care
   } .elsewhen (sym_period_counter === 0.U) {
-    mid_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S(2.W), -1.S(2.W))
+    mid_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   } .elsewhen (sym_period_counter < ((shift_bits)/2).U) {
-    mid_sum := mid_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S(2.W), -1.S(2.W))
+    mid_sum := mid_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   } .otherwise {
     mid_sum := mid_sum                                    // Redundant. For illustrative purposes
   }
 
-  last_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.U).asUInt, last_bit)          // This is a register to store the last bit
-  recovered_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.U).asUInt, last_bit)     // This is a wire that outputs the last recovered bit at the right clock period
+  last_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.S).asUInt, last_bit)          // This is a register to store the last bit
+  recovered_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.S).asUInt, last_bit)     // This is a wire that outputs the last recovered bit at the right clock period
 
-  backup_sum_bit := Mux(sym_period_counter === 0.U, (backup_sum > 0.U).asUInt, backup_sum_bit)
+  backup_sum_bit := Mux(sym_period_counter === 0.U, (backup_sum > 0.S).asUInt, backup_sum_bit)
 
   // These commented lines contain an incomplete clock deviation correction algorithm
   val extra_bit = RegInit(0.U(1.W))
@@ -111,12 +113,12 @@ class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, 
   when (first_cycle_done && sym_period_counter === 0.U) { // start_CR is implied
     extra_bit := 0.U
     extra_pause := 0.U
-    when ((data_sum > 0.U) && (mid_sum > data_sum - mid_sum) || (data_sum <= 0.U) && (mid_sum < data_sum - mid_sum)) {
+    when ((data_sum > 0.S) && (mid_sum > data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum < data_sum - mid_sum)) {
       shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
       when (shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U) {
         extra_bit := 1.U                                  // Need to output what's already in noclk_shiftreg
       }
-    } .elsewhen ((data_sum > 0.U) && (mid_sum < data_sum - mid_sum) || (data_sum <= 0.U) && (mid_sum > data_sum - mid_sum)) {
+    } .elsewhen ((data_sum > 0.S) && (mid_sum < data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum > data_sum - mid_sum)) {
       shiftreg_ptr := shiftreg_ptr - CR_adjust_res.U
       when (shiftreg_ptr < CR_adjust_res.U) {
         extra_pause := 1.U                                // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted

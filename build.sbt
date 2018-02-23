@@ -24,11 +24,11 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-name := "cdr-chisel-module"
+name := "cdr"
 
 version := "3.0.0"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.11.12"
 
 crossScalaVersions := Seq("2.11.11", "2.12.3")
 
