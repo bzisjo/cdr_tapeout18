@@ -10,12 +10,13 @@ class CDRTests(c: CDR) extends PeekPokeTester(c) {
 }
 
 class CDRTester extends ChiselFlatSpec {
-	val backends = Array[String]("firrtl", "verilator")
+	//val backends = Array[String]("firrtl", "verilator")
 	behavior of "CDR"
 	backends foreach {backend =>
 		it should s"idk, but something $backend" in {
-			Driver(() => new CDR(5, 5, 15, 40, 1), backend) { c =>
-				new CDRTester(c)
+			// chisel3.iotesters.Driver(() => new CDR(5, 5, 15, 40, 1), backend)(c => new CDRTests(c)) should be (true)
+			chisel3.iotesters.Driver(() => new CDR(5, 5, 15, 40, 1), backend) { c =>
+				new CDRTests(c)
 			} should be(true)
 		}
 	}

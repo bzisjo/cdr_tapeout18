@@ -79,8 +79,8 @@ class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, 
 
 
   when (!start_CR) {
-    data_sum := noclk_shiftreg(shiftreg_ptr)               // Don't care
-    backup_sum := noclk_shiftreg(0.U)                      // Don't care
+    data_sum := 0.S                                        // Don't care
+    backup_sum := 0.S                                      // Don't care
   } .elsewhen (sym_period_counter != 0.U) {
     data_sum := data_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
     data_sum := data_sum + Mux(noclk_shiftreg(0.U) === 1.U, 1.S, -1.S)
@@ -90,7 +90,7 @@ class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, 
   }
 
   when(!start_CR) {
-    mid_sum := noclk_shiftreg(shiftreg_ptr)                // Don't care
+    mid_sum := 0.S                                        // Don't care
   } .elsewhen (sym_period_counter === 0.U) {
     mid_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   } .elsewhen (sym_period_counter < ((shift_bits)/2).U) {
