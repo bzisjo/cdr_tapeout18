@@ -5,12 +5,25 @@ package cdr
 
 import chisel3._
 import chisel3.util._
+import dsptools.numbers._
+import dsptools.DspContext
 
-class CDR(adc_width: Int = 5, space_counter_width: Int = 5, IF_value: Int = 15, shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
-  val io = IO(new Bundle {
-    val isig = Input(SInt(adc_width.W))
-    val data_out = Decoupled(UInt(1.W))
-  })
+// IO Bundle. Note that when you parameterize the bundle, you MUST override cloneType.
+// This also creates x, y, z inputs/outputs (direction must be specified at some IO hierarchy level)
+// of the type you specify via gen (must be Data:RealBits = UInt, SInt, FixedPoint, DspReal)
+class DspIo[T <: Data:RealBits](gen: T) extends Bundle {
+  val isig = Input(gen.cloneType)
+  val data_out = Decoupled(UInt(1.W))
+  override def cloneType: this.type = new DspIo(gen).asInstanceOf[this.type]
+}
+
+
+class CDR[T <: Data:Real](gen: T, val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value: Int = 15, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{
+  // val io = IO(new Bundle {
+  //   val isig = Input(SInt(adc_width.W))
+  //   val data_out = Decoupled(UInt(1.W))
+  // })
+  val io = IO(new DspIo(gen))
 
 
   // Pseudo-interpolation and Zero Crossing Detection
