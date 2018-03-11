@@ -59,7 +59,7 @@ class CDRTester(c: CDR) extends PeekPokeTester(c) {
 		poke(c.io.data_out.ready, true.B)
 		if(peek(c.io.data_out.valid) == 1) {
 			// data_out = data_out :+ peek(c.io.data_out.bits).toInt
-			printf(s"${peek(c.io.data_out.bits)}, ")
+			println(s"${peek(c.io.data_out.bits)}, ")
 		}
 		step(1)
 	}
