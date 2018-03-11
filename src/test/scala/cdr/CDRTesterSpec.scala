@@ -80,7 +80,7 @@ class CDRTester(c: CDR) extends PeekPokeTester(c) {
 
 class CDRTesterSpec extends FreeSpec with Matchers {
 	"tester should do something" in {
-  	iotesters.Driver.execute(Array("--backend-name", "firrtl", "--target-dir", "test_run_dir"), () => new CDR(adc_width = 5, space_counter_width = 5, IF_value = 15, shift_bits = 40, CR_adjust_res = 4)) { c =>
+  	iotesters.Driver.execute(Array("--backend-name", "firrtl", "--target-dir", "test_run_dir", "--fint-write-vcd"), () => new CDR(adc_width = 5, space_counter_width = 5, IF_value = 15, shift_bits = 40, CR_adjust_res = 4)) { c =>
   		new CDRTester(c)
   	} should be (true)
   }
