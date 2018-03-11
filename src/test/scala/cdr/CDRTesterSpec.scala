@@ -25,6 +25,7 @@ class CDRTester[T <: Data:RealBits](c: CDR[T]) extends DspTester(c){
 	//val I_input:Seq[SInt] = parsedIStr.map(_.toInt).map(_.asSInt).toSeq
 	val isig = parsedIStr.toSeq
 	val data_out = Seq[Int]()
+	reset(5)
 	for (v <- isig) {
 		poke(c.io.isig, v)
 		poke(c.io.data_out.ready, true.B)
@@ -37,7 +38,6 @@ class CDRTester[T <: Data:RealBits](c: CDR[T]) extends DspTester(c){
 	val writer = CSVWriter.open(f)
 	writer.writeAll(data_out)
 	writer.close()
-
 }
 
 class CDRTesterSpec extends FlatSpec with Matchers {

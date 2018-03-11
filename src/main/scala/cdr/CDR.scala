@@ -5,39 +5,49 @@ package cdr
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.FixedPoint
 import dsptools.numbers._
+import dsptools.numbers.implicits._
 import dsptools.DspContext
 
 // IO Bundle. Note that when you parameterize the bundle, you MUST override cloneType.
 // This also creates x, y, z inputs/outputs (direction must be specified at some IO hierarchy level)
 // of the type you specify via gen (must be Data:RealBits = UInt, SInt, FixedPoint, DspReal)
-class DspIo[T <: Data:RealBits](gen: T) extends Bundle {
-  val isig = Input(gen.cloneType)
-  val data_out = Decoupled(UInt(1.W))
-  override def cloneType: this.type = new DspIo(gen).asInstanceOf[this.type]
-}
+// class DspIo[T <: Data:Real](gen: => T) extends Bundle {
+//   val isig = Input(gen.cloneType)
+//   val data_out = Decoupled(UInt(1.W))
+//   // override def cloneType: this.type = new DspIo(gen).asInstanceOf[this.type]
+// }
 
 
-class CDR[T <: Data:Real](gen: T, val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value: Int = 15, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{
+class CDR[T <: Data:Real](gen:() => T, val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value: Int = 15, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{
   // val io = IO(new Bundle {
   //   val isig = Input(SInt(adc_width.W))
   //   val data_out = Decoupled(UInt(1.W))
   // })
-  val io = IO(new DspIo(gen))
+  // val io = IO(new DspIo(gen))
+  val io = IO(new Bundle {
+    val isig: T = Input(gen().cloneType)
+    val data_out = Decoupled(UInt(1.W))
+  })
 
 
   // Pseudo-interpolation and Zero Crossing Detection
 
-  val prev_isig = RegInit(0.S(adc_width.W))
+  // val prev_isig = RegInit(0.S(adc_width.W))    //DSP
+  val prev_isig: T =  RegInit(gen().cloneType)
   val start_CR = RegInit(false.B)
-  val zcross_detected = (prev_isig(adc_width-1) ^ io.isig(adc_width-1))
+  // val zcross_detected = (prev_isig(adc_width-1) ^ io.isig(adc_width-1))
+  val testcomp = prev_isig
+  val zcross_detected = ((prev_isig >= 0.S) && (io.isig < 0.S)) || ((prev_isig < 0.S) && (io.isig >= 0.S))
   val zcross_loc = Wire(Bool())								      // Pseudo-interpolation. 0 for first half, 1 for second of one clock cycle
 
   prev_isig := io.isig                                       // Store prev signal value
 
   when (zcross_detected) {
   	start_CR := true.B											            // This register gets set once at the very beginning
-  	when (io.isig(adc_width-1) === 1.U) {							    // Zero Crossing && new point is negative
+    when (io.isig < 0.S) {
+  	// when (io.isig(adc_width-1) === 1.U) {							    // Zero Crossing && new point is negative
   		zcross_loc := ((prev_isig + io.isig) >= 0.S)				  // Sum of prev and curr is >= 0 means zero crossing happens in the second half
   	} .otherwise {												              // Zero Crossing && new point is positive
   		zcross_loc := ((prev_isig + io.isig) < 0.S)				  // Sum of prev and curr is < 0 means zero crossing happens in the second half
