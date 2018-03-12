@@ -47,27 +47,43 @@ import scala.io.Source
 class CDRTester(c: CDR) extends PeekPokeTester(c) {
 	val I_out = "./src/test/scala/cdr/I_out.csv"
 	// val Q_out = "./src/test/scala/cdr/Q_out.csv"
-	val cdr_result = "./src/test/scala/cdr/cdr_result.csv"
+	val cdr_result = "./src/test/scala/cdr/data_exp.csv"
 	val IStr = Source.fromFile(I_out).getLines().next
 	val parsedIStr = IStr.split(",").map(_.trim)
 	//val I_input:Seq[SInt] = parsedIStr.map(_.toInt).map(_.asSInt).toSeq
 	val isig = parsedIStr.map(_.toInt).toSeq
-	var data_out = Seq[Int]()
+
+	var data_out_exp = Seq[Int]()
+	for (line <- Source.fromFile(cdr_result).getLines) {
+		data_out_exp = data_out_exp :+ line.toInt
+	}
+	// for (item <- data_out_exp) {
+	// 	println(s"test ${item}")
+	// }
+
+	// val resultsstr = Source.fromFile(cdr_result).getLines().next.map(_.toInt).toSeq
+	// var data_out = Seq[Int]()
 	reset(5)
+	var result_idx = 0
 	for (v <- isig) {
 		poke(c.io.isig, v)
 		poke(c.io.data_out.ready, true.B)
 		if(peek(c.io.data_out.valid) == 1) {
-			// data_out = data_out :+ peek(c.io.data_out.bits).toInt
-			println(s"${peek(c.io.data_out.bits)}")
+			// println(s"got:${peek(c.io.data_out.bits)}")
+			// println(s"exp:${data_out_exp(result_idx)}")
+			expect(c.io.data_out.bits, data_out_exp(result_idx))
+			result_idx = result_idx + 1
 		}
 		step(1)
 	}
-	for(i <- 1 until 100) {
+	for(i <- 1 until 80) {
 		poke(c.io.isig, 0)
 		poke(c.io.data_out.ready, true.B)
 		if(peek(c.io.data_out.valid) == 1) {
-			println(s"${peek(c.io.data_out.bits)}")
+			// println(s"got:${peek(c.io.data_out.bits)}")
+			// println(s"exp:${data_out_exp(result_idx)}")
+			expect(c.io.data_out.bits, data_out_exp(result_idx))
+			result_idx = result_idx + 1
 		}
 		step(1)
 	}

@@ -11,27 +11,13 @@ import chisel3.util._
 // import dsptools.numbers.implicits._
 // import dsptools.{DspContext, Saturate}
 
-// IO Bundle. Note that when you parameterize the bundle, you MUST override cloneType.
-// This also creates x, y, z inputs/outputs (direction must be specified at some IO hierarchy level)
-// of the type you specify via gen (must be Data:RealBits = UInt, SInt, FixedPoint, DspReal)
-// class DspIo[T <: Data:Real](gen: => T) extends Bundle {
-//   val isig = Input(gen.cloneType)
-//   val data_out = Decoupled(UInt(1.W))
-//   // override def cloneType: this.type = new DspIo(gen).asInstanceOf[this.type]
-// }
 
-
-// class CDR[T <: Data:RealBits](gen: => T, val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value: Int = 15, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{
 class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value: Int = 15, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{
   val io = IO(new Bundle {
     val isig = Input(SInt(adc_width.W))
     val data_out = Decoupled(UInt(1.W))
   })
-  // val io = IO(new DspIo(gen))
-  // val io = IO(new Bundle {
-  //   val isig = Input(gen.cloneType)
-  //   val data_out = Decoupled(UInt(1.W))
-  // })
+
 
   // Pseudo-interpolation and Zero Crossing Detection
 
@@ -39,19 +25,16 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
   // val prev_isig = RegInit(gen.cloneType)
   val start_CR = RegInit(false.B)
   val zcross_detected = (prev_isig(adc_width-1) ^ io.isig(adc_width-1))
-  // val testcomp = Bool()
-  // val zcross_detected = ((prev_isig >= 0.S) && (io.isig < 0.S)) || ((prev_isig < 0.S) && (io.isig >= 0.S))
-  val zcross_loc = Wire(Bool())								      // Pseudo-interpolation. 0 for first half, 1 for second of one clock cycle
+  val zcross_loc = Wire(Bool())								          // Pseudo-interpolation. 0 for first half, 1 for second of one clock cycle
 
-  prev_isig := io.isig                                       // Store prev signal value
+  prev_isig := io.isig                                  // Store prev signal value
 
   when (zcross_detected) {
   	start_CR := true.B											            // This register gets set once at the very beginning
-    // when (io.isig < 0.S) {
-  	when (io.isig(adc_width-1) === 1.U) {							    // Zero Crossing && new point is negative
-      zcross_loc := ((prev_isig + io.isig) >= 0.S)				  // Sum of prev and curr is >= 0 means zero crossing happens in the second half
+  	when (io.isig(adc_width-1) === 1.U) {							  // Zero Crossing && new point is negative
+      zcross_loc := ((prev_isig + io.isig) >= 0.S)			// Sum of prev and curr is >= 0 means zero crossing happens in the second half
   	} .otherwise {												              // Zero Crossing && new point is positive
-  		zcross_loc := ((prev_isig + io.isig) < 0.S)				  // Sum of prev and curr is < 0 means zero crossing happens in the second half
+  		zcross_loc := ((prev_isig + io.isig) < 0.S)				// Sum of prev and curr is < 0 means zero crossing happens in the second half
   	}
   }.otherwise {
   	zcross_loc := false.B										            // This value is only used with zcross_detected, so nominally we set it to false with no side effects
@@ -71,14 +54,10 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
   	space_counter := 0.U(space_counter_width.W)					// ZC encountered, reset space_counter
   	data_noclk := Mux((space_counter + zcross_loc.asUInt) < IF_compare, 1.U, 0.U)
   }
-// TODO: VALIDATE TIMING
-
 
 
 
   // Clock recovery
-
-  // val noclk_shiftreg = RegInit(Vec(shift_bits, UInt(1.W)).fromBits(0.U))
   val noclk_shiftreg = RegInit(Vec(Seq.fill(shift_bits)(0.U(1.W))))
 
   for (i <- 0 until shift_bits-1) {
@@ -114,13 +93,13 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
   }
 
   when(!start_CR) {
-    mid_sum := 0.S                                        // Don't care
+    mid_sum := 0.S                                         // Don't care
   } .elsewhen (sym_period_counter === 0.U) {
     mid_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   } .elsewhen (sym_period_counter < ((shift_bits)/2).U) {
     mid_sum := mid_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   } .otherwise {
-    mid_sum := mid_sum                                    // Redundant. For illustrative purposes
+    mid_sum := mid_sum                                     // Redundant. For illustrative purposes
   }
 
   last_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.S).asUInt, last_bit)          // This is a register to store the last bit
@@ -134,43 +113,31 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
 
   first_cycle_done := first_cycle_done || sym_period_counter === (shift_bits-1).U         // Don't want to trigger following logic before first cycle
 
-  when (first_cycle_done && sym_period_counter === 0.U) { // start_CR is implied
+  when (first_cycle_done && sym_period_counter === 0.U) {  // start_CR is implied
     extra_bit := 0.U
     extra_pause := 0.U
     when ((data_sum > 0.S) && (mid_sum > data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum < data_sum - mid_sum)) {
       when ((shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U)) {
         when (extra_pause === 0.U) {
           shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U - shift_bits.U
-          extra_bit := 1.U                                  // Need to output what's already in noclk_shiftreg
-          printf(p"shifted+ with extra_bit\n")
+          extra_bit := 1.U                                 // Need to output what's already in noclk_shiftreg
+          // printf(p"shifted+ with extra_bit\n")
         }
       } .otherwise {
         shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
-        printf(p"shifted+\n")
+        // printf(p"shifted+\n")
       }
-      // shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
-      // printf(p"shifted+\n")
-      // when (shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U) {
-      //   extra_bit := 1.U                                  // Need to output what's already in noclk_shiftreg
-      //   printf(p"extra_bit\n")
-      // }
     } .elsewhen ((data_sum > 0.S) && (mid_sum < data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum > data_sum - mid_sum)) {
       when ((shiftreg_ptr < CR_adjust_res.U)) {
         when (extra_bit === 0.U){
           shiftreg_ptr := shiftreg_ptr + shift_bits.U - CR_adjust_res.U
-          extra_pause := 1.U                                  // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
-          printf(p"shifted- with extra_pause\n")
+          extra_pause := 1.U                               // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
+          // printf(p"shifted- with extra_pause\n")
         }
       } .otherwise {
         shiftreg_ptr := shiftreg_ptr - CR_adjust_res.U
-        printf(p"shifted-\n")
+        // printf(p"shifted-\n")
       }
-      // shiftreg_ptr := shiftreg_ptr - CR_adjust_res.U
-      // printf(p"shifted-\n")
-      // when (shiftreg_ptr < CR_adjust_res.U) {
-      //   extra_pause := 1.U                                // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
-      //   printf(p"extrapause\n")
-      // }
     }
   }
 
