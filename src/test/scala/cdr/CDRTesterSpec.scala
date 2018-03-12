@@ -45,7 +45,7 @@ import scala.io.Source
 // }
 
 class CDRTester(c: CDR) extends PeekPokeTester(c) {
-	val I_out = "./src/test/scala/cdr/I_out.csv"
+	val I_out = "./src/test/scala/cdr/I_out_q.csv"
 	// val Q_out = "./src/test/scala/cdr/Q_out.csv"
 	val cdr_result = "./src/test/scala/cdr/data_exp.csv"
 	val IStr = Source.fromFile(I_out).getLines().next
@@ -69,8 +69,7 @@ class CDRTester(c: CDR) extends PeekPokeTester(c) {
 		poke(c.io.isig, v)
 		poke(c.io.data_out.ready, true.B)
 		if(peek(c.io.data_out.valid) == 1) {
-			// println(s"got:${peek(c.io.data_out.bits)}")
-			// println(s"exp:${data_out_exp(result_idx)}")
+			println(s"got:${peek(c.io.data_out.bits)}, exp:${data_out_exp(result_idx)}")
 			expect(c.io.data_out.bits, data_out_exp(result_idx))
 			result_idx = result_idx + 1
 		}
@@ -80,8 +79,7 @@ class CDRTester(c: CDR) extends PeekPokeTester(c) {
 		poke(c.io.isig, 0)
 		poke(c.io.data_out.ready, true.B)
 		if(peek(c.io.data_out.valid) == 1) {
-			// println(s"got:${peek(c.io.data_out.bits)}")
-			// println(s"exp:${data_out_exp(result_idx)}")
+			println(s"got:${peek(c.io.data_out.bits)}, exp:${data_out_exp(result_idx)}")
 			expect(c.io.data_out.bits, data_out_exp(result_idx))
 			result_idx = result_idx + 1
 		}
@@ -96,7 +94,7 @@ class CDRTester(c: CDR) extends PeekPokeTester(c) {
 
 class CDRTesterSpec extends FreeSpec with Matchers {
 	"tester should do something" in {
-  	iotesters.Driver.execute(Array("--backend-name", "firrtl", "--target-dir", "test_run_dir", "--fint-write-vcd"), () => new CDR(adc_width = 5, space_counter_width = 5, IF_value = 15, shift_bits = 40, CR_adjust_res = 4)) { c =>
+  	iotesters.Driver.execute(Array("--backend-name", "firrtl", "--target-dir", "test_run_dir", "--fint-write-vcd"), () => new CDR(adc_width = 5, space_counter_width = 5, IF_value = 16, shift_bits = 40, CR_adjust_res = 4)) { c =>
   		new CDRTester(c)
   	} should be (true)
   }
