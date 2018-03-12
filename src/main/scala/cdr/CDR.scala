@@ -138,10 +138,12 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
     extra_bit := 0.U
     extra_pause := 0.U
     when ((data_sum > 0.S) && (mid_sum > data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum < data_sum - mid_sum)) {
-      when ((shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U) && extra_pause === 0.U) {
-        shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U - shift_bits.U
-        extra_bit := 1.U                                  // Need to output what's already in noclk_shiftreg
-        printf(p"shifted+ with extra_bit\n")
+      when ((shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U)) {
+        when (extra_pause === 0.U) {
+          shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U - shift_bits.U
+          extra_bit := 1.U                                  // Need to output what's already in noclk_shiftreg
+          printf(p"shifted+ with extra_bit\n")
+        }
       } .otherwise {
         shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
         printf(p"shifted+\n")
@@ -153,10 +155,12 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
       //   printf(p"extra_bit\n")
       // }
     } .elsewhen ((data_sum > 0.S) && (mid_sum < data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum > data_sum - mid_sum)) {
-      when ((shiftreg_ptr < CR_adjust_res.U) && extra_bit === 0.U) {
-        shiftreg_ptr := shiftreg_ptr + shift_bits.U - CR_adjust_res.U
-        extra_pause := 1.U
-        printf(p"shifted- with extra_pause\n")                            // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
+      when ((shiftreg_ptr < CR_adjust_res.U)) {
+        when (extra_bit === 0.U){
+          shiftreg_ptr := shiftreg_ptr + shift_bits.U - CR_adjust_res.U
+          extra_pause := 1.U                                  // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
+          printf(p"shifted- with extra_pause\n")
+        }
       } .otherwise {
         shiftreg_ptr := shiftreg_ptr - CR_adjust_res.U
         printf(p"shifted-\n")
