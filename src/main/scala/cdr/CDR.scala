@@ -107,10 +107,10 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
     backup_sum := 0.S                                      // Don't care
   } .elsewhen (sym_period_counter =/= 0.U) {
     data_sum := data_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
-    data_sum := data_sum + Mux(noclk_shiftreg(0.U) === 1.U, 1.S, -1.S)
+    backup_sum := backup_sum + Mux(noclk_shiftreg(0.U) === 1.U, 1.S, -1.S)
   } .otherwise {
     data_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
-    backup_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
+    backup_sum := Mux(noclk_shiftreg(0.U) === 1.U, 1.S, -1.S)
   }
 
   when(!start_CR) {
@@ -138,19 +138,35 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
     extra_bit := 0.U
     extra_pause := 0.U
     when ((data_sum > 0.S) && (mid_sum > data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum < data_sum - mid_sum)) {
-      shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
-      printf(p"shifted+\n")
-      when (shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U) {
+      when ((shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U) && extra_pause === 0.U) {
+        shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U - shift_bits.U
         extra_bit := 1.U                                  // Need to output what's already in noclk_shiftreg
-        printf(p"extrabit\n")
+        printf(p"shifted+ with extra_bit\n")
+      } .otherwise {
+        shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
+        printf(p"shifted+\n")
       }
+      // shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
+      // printf(p"shifted+\n")
+      // when (shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U) {
+      //   extra_bit := 1.U                                  // Need to output what's already in noclk_shiftreg
+      //   printf(p"extra_bit\n")
+      // }
     } .elsewhen ((data_sum > 0.S) && (mid_sum < data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum > data_sum - mid_sum)) {
-      shiftreg_ptr := shiftreg_ptr - CR_adjust_res.U
-      printf(p"shifted-\n")
-      when (shiftreg_ptr < CR_adjust_res.U) {
-        extra_pause := 1.U                                // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
-        printf(p"extrapause\n")
+      when ((shiftreg_ptr < CR_adjust_res.U) && extra_bit === 0.U) {
+        shiftreg_ptr := shiftreg_ptr + shift_bits.U - CR_adjust_res.U
+        extra_pause := 1.U
+        printf(p"shifted- with extra_pause\n")                            // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
+      } .otherwise {
+        shiftreg_ptr := shiftreg_ptr - CR_adjust_res.U
+        printf(p"shifted-\n")
       }
+      // shiftreg_ptr := shiftreg_ptr - CR_adjust_res.U
+      // printf(p"shifted-\n")
+      // when (shiftreg_ptr < CR_adjust_res.U) {
+      //   extra_pause := 1.U                                // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
+      //   printf(p"extrapause\n")
+      // }
     }
   }
 
