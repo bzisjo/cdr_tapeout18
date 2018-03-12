@@ -1,0 +1,49 @@
+[*]
+[*] GTKWave Analyzer v3.3.66 (w)1999-2015 BSI
+[*] Mon Mar 12 07:15:43 2018
+[*]
+[dumpfile] "/mnt/c/Projects/cdr/test_run_dir/cdr.CDRTesterSpec146031211/CDR.vcd"
+[dumpfile_mtime] "Mon Mar 12 02:19:44 2018"
+[dumpfile_size] 115190
+[savefile] "/mnt/c/Projects/cdr/test_run_dir/testing.gtkw"
+[timestart] 0
+[size] 1620 1017
+[pos] -1 -1
+*-5.874234 321 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 210
+[signals_width] 241
+[sst_expanded] 1
+[sst_vpaned_height] 301
+@29
+CDR.clock
+CDR.reset
+@23
+CDR.io_isig[4:0]
+@29
+CDR.first_cycle_done
+@23
+CDR.IF_compare[4:0]
+@25
+CDR.space_counter[4:0]
+CDR.shiftreg_ptr[5:0]
+@29
+CDR.zcross_detected
+CDR.data_noclk
+CDR.start_CR
+@25
+CDR.sym_period_counter[5:0]
+@29
+CDR.last_bit
+CDR.recovered_bit
+CDR.io_data_out_bits
+CDR.io_data_out_valid
+CDR.state[1:0]
+CDR.extra_bit
+CDR.extra_pause
+CDR.noclk_shiftreg_0
+@25
+CDR.data_sum[6:0]
+CDR.mid_sum[5:0]
+CDR.backup_sum[6:0]
+[pattern_trace] 1
+[pattern_trace] 0
