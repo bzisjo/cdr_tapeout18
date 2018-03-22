@@ -12,12 +12,16 @@ import chisel3.util._
 // import dsptools.{DspContext, Saturate}
 
 
-class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value: Int = 15, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{
+class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{
   val io = IO(new Bundle {
     val isig = Input(SInt(adc_width.W))
     val data_out = Decoupled(UInt(1.W))
+    val IF_value = Flipped(Decoupled(UInt(5.W)))
   })
 
+  val IF_compare = RegInit(16.U(5.W))
+  IF_compare := Mux(io.IF_value.valid, io.IF_value.bits, IF_compare)
+  io.IF_value.ready := true.B
 
   // Pseudo-interpolation and Zero Crossing Detection
 
@@ -43,9 +47,9 @@ class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val IF_value
   // Space counter and Data demodulation
   val space_counter = RegInit(0.U(space_counter_width.W))
   val data_noclk = RegInit(0.U(1.W))
-  val IF_compare = Wire(UInt((log2Up(IF_value)+1).W))
+  // val IF_compare = Wire(UInt((log2Up(IF_value)+1).W))
 
-  IF_compare := IF_value.U
+  // IF_compare := IF_value.U
 
   when (!zcross_detected) {
   	space_counter := space_counter + 2.U						    // No ZC, count up by two spaces
