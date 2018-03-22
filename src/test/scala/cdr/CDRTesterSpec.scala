@@ -54,8 +54,9 @@ class CDRTester(c: CDR) extends PeekPokeTester(c) {
 	val isig = parsedIStr.map(_.toInt).toSeq
 
 	var data_out_exp = Seq[Int]()
-	for (line <- Source.fromFile(cdr_result).getLines) {
-		data_out_exp = data_out_exp :+ line.toInt
+	// data_out_exp = Source.fromFile(cdr_result).getLines.map(_.toInt)
+	for (line <- Source.fromFile(cdr_result).getLines.map(_.toInt)) {
+		data_out_exp = data_out_exp :+ line
 	}
 	// for (item <- data_out_exp) {
 	// 	println(s"test ${item}")
