@@ -76,10 +76,14 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 139.0,
-		"last_filter": "makefile",
+		"height": 104.0,
+		"last_filter": "bash",
 		"selected_items":
 		[
+			[
+				"bash",
+				"Set Syntax: Shell Script (Bash)"
+			],
 			[
 				"makefile",
 				"Set Syntax: Makefile"
@@ -113,7 +117,7 @@
 				"Package Control: Install Package"
 			]
 		],
-		"width": 1144.0
+		"width": 567.0
 	},
 	"console":
 	{
@@ -571,7 +575,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 340.0,
+	"side_bar_width": 136.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

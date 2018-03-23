@@ -22,37 +22,37 @@ if [ ! -d "$DIR/dsptools" ]; then
 fi
 
 cd $DIR/firrtl/
+git checkout master
 git pull --rebase
-git checkout v1.1.0-RC1
 sbt clean
 sbt compile
 sbt assembly
 sbt publishLocal
 
 cd $DIR/firrtl-interpreter
+git checkout master
 git pull --rebase
-git checkout v1.1.0-RC1
 sbt clean
 sbt compile
 sbt publishLocal
 
 cd $DIR/chisel3
+git checkout master
 git pull --rebase
-git checkout v3.1.0-RC1
 sbt clean
 sbt compile
 sbt publishLocal
 
 cd $DIR/chisel-testers
+git checkout master
 git pull --rebase
-git checkout v1.2.0-RC1
 sbt clean
 sbt compile
 sbt publishLocal
 
 cd $DIR/dsptools
+git checkout master
 git pull --rebase
-git checkout v1.1.0-RC1
 sbt clean
 sbt compile
 sbt publishLocal
