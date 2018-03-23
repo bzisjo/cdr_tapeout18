@@ -5,44 +5,10 @@ import chisel3.util._
 import chisel3.iotesters._
 import chisel3.iotesters.{ChiselFlatSpec, Exerciser, PeekPokeTester, SteppedHWIOTester}
 import org.scalatest.{FreeSpec, Matchers}
-
-
-// import chisel3.experimental.FixedPoint
-// import dsptools.nmbers._
-// import dsptools.DspContext
-// import dsptools.{DspTester, DspTesterOptionsManager, DspTesterOptions}
-// import iotesters.TesterOptions
-
-
-// import org.scalatest.{Matchers, FlatSpec}
-
-
+import java.io.File
+import java.io.PrintWriter
 import scala.io.Source
-// import com.github.tototoshi.csv._
 
-// class CDRTester[T <: Data:RealBits](c: CDR[T]) extends DspTester(c){
-// 	val I_out = "./src/test/scala/cdr/I_out.csv"
-// 	// val Q_out = "./src/test/scala/cdr/Q_out.csv"
-// 	val cdr_result = "./src/test/scala/cdr/cdr_result.csv"
-// 	val IStr = Source.fromFile(filename).getLines().next
-// 	val parsedIStr = IStr.split(",").map(_.trim)
-// 	//val I_input:Seq[SInt] = parsedIStr.map(_.toInt).map(_.asSInt).toSeq
-// 	val isig = parsedIStr.toSeq
-// 	val data_out = Seq[Int]()
-// 	reset(5)
-// 	for (v <- isig) {
-// 		poke(c.io.isig, v)
-// 		poke(c.io.data_out.ready, true.B)
-// 		if(peek(c.io.data_out.valid)) {
-// 			data_out = data_out :+ peek(c.io.data_out.bits)
-// 		}
-// 		step(1)
-// 	}
-// 	val f = new File(cdr_result)
-// 	val writer = CSVWriter.open(f)
-// 	writer.writeAll(data_out)
-// 	writer.close()
-// }
 
 class CDRTester(c: CDR) extends PeekPokeTester(c) {
 	val I_out = "./src/test/scala/cdr/I_out_q.csv"
@@ -50,47 +16,58 @@ class CDRTester(c: CDR) extends PeekPokeTester(c) {
 	val cdr_result = "./src/test/scala/cdr/data_exp.csv"
 	val IStr = Source.fromFile(I_out).getLines().next
 	val parsedIStr = IStr.split(",").map(_.trim)
-	//val I_input:Seq[SInt] = parsedIStr.map(_.toInt).map(_.asSInt).toSeq
 	val isig = parsedIStr.map(_.toInt).toSeq
 
 	var data_out_exp = Seq[Int]()
-	// data_out_exp = Source.fromFile(cdr_result).getLines.map(_.toInt)
 	for (line <- Source.fromFile(cdr_result).getLines.map(_.toInt)) {
 		data_out_exp = data_out_exp :+ line
 	}
-	// for (item <- data_out_exp) {
-	// 	println(s"test ${item}")
-	// }
 
-	// val resultsstr = Source.fromFile(cdr_result).getLines().next.map(_.toInt).toSeq
-	// var data_out = Seq[Int]()
+	var data_out_demod = Seq[Int]()
+
 	reset(5)
 	var result_idx = 0
+	// for (v <- isig) {
+	// 	poke(c.io.isig, v)
+	// 	poke(c.io.data_out.ready, true.B)
+	// 	if(peek(c.io.data_out.valid) == 1) {
+	// 		data_out_demod = data_out_demod :+ peek(c.io.data_out.bits).toInt
+	// 		println(s"got:${peek(c.io.data_out.bits)}, exp:${data_out_exp.lift(result_idx)}")
+	// 		expect(c.io.data_out.bits, data_out_exp.lift(result_idx))
+	// 		result_idx = result_idx + 1
+	// 	}
+	// 	step(1)
+	// }
+	// for(i <- 1 until 80) {
+	// 	poke(c.io.isig, 0)
+	// 	poke(c.io.data_out.ready, true.B)
+	// 	if(peek(c.io.data_out.valid) == 1) {
+	// 		data_out_demod = data_out_demod :+ peek(c.io.data_out.bits).toInt
+	// 		println(s"got:${peek(c.io.data_out.bits)}, exp:${data_out_exp(result_idx)}")
+	// 		expect(c.io.data_out.bits, data_out_exp(result_idx))
+	// 		result_idx = result_idx + 1
+	// 	}
+	// 	step(1)
+	// }
+
 	for (v <- isig) {
 		poke(c.io.isig, v)
 		poke(c.io.data_out.ready, true.B)
 		if(peek(c.io.data_out.valid) == 1) {
-			println(s"got:${peek(c.io.data_out.bits)}, exp:${data_out_exp(result_idx)}")
-			expect(c.io.data_out.bits, data_out_exp(result_idx))
+			// println(s"got:${peek(c.io.data_out.bits)}")
+			data_out_demod = data_out_demod :+ peek(c.io.data_out.bits).toInt
+			println(peek(c.io.data_out.bits).toInt.toString)
 			result_idx = result_idx + 1
 		}
 		step(1)
 	}
-	for(i <- 1 until 80) {
-		poke(c.io.isig, 0)
-		poke(c.io.data_out.ready, true.B)
-		if(peek(c.io.data_out.valid) == 1) {
-			println(s"got:${peek(c.io.data_out.bits)}, exp:${data_out_exp(result_idx)}")
-			expect(c.io.data_out.bits, data_out_exp(result_idx))
-			result_idx = result_idx + 1
-		}
-		step(1)
+
+
+	val writer = new PrintWriter(new File("data_out_demod.csv"))
+	for(v <- data_out_demod) {
+		writer.write(v.toString+"\n")
 	}
-	// val f = new File(cdr_result)
-	// val writer = CSVWriter.open(f)
-	// writer.writeAll(data_out)
-	// writer.close()
-	// println(data_out(1))
+	writer.close()
 }
 
 class CDRTesterSpec extends FreeSpec with Matchers {
