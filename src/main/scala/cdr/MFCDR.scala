@@ -19,6 +19,6 @@ class MFCDR(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t
     demodulator.io.qsig := io.qsig
 
     cr_module.io.data_noclk := demodulator.io.data_noclk
-    io.data_out := cr_module.io.data_out
+    io.data_out <> cr_module.io.data_out
 
 }

@@ -36,10 +36,10 @@ class MF(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t1Q_
     val mf2 = Wire(SInt((adc_width*6).W))
 
     template2I.io.in := io.isig
-    template2.io.in := io.qsig
+    template2Q.io.in := io.qsig
     I2 := template2I.io.out
     Q2 := template2Q.io.out
-    mf1 := I2*I2 + Q2*Q2
+    mf2 := I2*I2 + Q2*Q2
 
     io.data_noclk := (mf1 < mf2).toBool
 }

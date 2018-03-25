@@ -11,8 +11,8 @@ import scala.io.Source
 
 class MFCDRTester(c: MFCDR) extends PeekPokeTester(c) {
     // We need the quantized, filtered/image rejected I and Q signals
-    val isig_file = "./src/test/scala/fir/I_out_q.csv"
-    val qsig_file = "./src/test/scala/fir/Q_out_q.csv"
+    val isig_file = "./src/test/scala/cdr/I_out.csv"
+    val qsig_file = "./src/test/scala/cdr/Q_out.csv"
     val isig = Source.fromFile(isig_file).getLines().next.split(",").map(_.trim).map(_.toInt).toSeq
     val qsig = Source.fromFile(qsig_file).getLines().next.split(",").map(_.trim).map(_.toInt).toSeq
     assert(isig.length == qsig.length)
@@ -42,10 +42,10 @@ class MFCDRTester(c: MFCDR) extends PeekPokeTester(c) {
 
 
 class MFCDRTesterSpec extends FreeSpec with Matchers {
-    val t1I_file = "./src/test/scala/fir/template1I.csv"
-    val t1Q_file = "./src/test/scala/fir/template1Q.csv"
-    val t2I_file = "./src/test/scala/fir/template2I.csv"
-    val t2Q_file = "./src/test/scala/fir/template2Q.csv"
+    val t1I_file = "./src/test/scala/cdr/template1I.csv"
+    val t1Q_file = "./src/test/scala/cdr/template1Q.csv"
+    val t2I_file = "./src/test/scala/cdr/template2I.csv"
+    val t2Q_file = "./src/test/scala/cdr/template2Q.csv"
 
     val t1I:Seq[SInt] = Source.fromFile(t1I_file).getLines().next.split(",").map(_.trim).map(_.toInt).map(_.asSInt).toSeq
     val t1Q:Seq[SInt] = Source.fromFile(t1Q_file).getLines().next.split(",").map(_.trim).map(_.toInt).map(_.asSInt).toSeq

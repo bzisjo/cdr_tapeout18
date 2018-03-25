@@ -6,24 +6,22 @@ import chisel3._
 import chisel3.util._
 
 class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
-	val io = IO(new Bundle{
-		val data_noclk = Input(UInt(1.W))
-		val data_out = Decoupled(UInt(1.W))
-	})
-}
-
+    val io = IO(new Bundle{
+        val data_noclk = Input(UInt(1.W))
+        val data_out = Decoupled(UInt(1.W))
+    })
 // Clock recovery
   val noclk_shiftreg = RegInit(Vec(Seq.fill(shift_bits)(0.U(1.W))))
 
   for (i <- 0 until shift_bits-1) {
-  	noclk_shiftreg((i+1).U) := noclk_shiftreg(i.U)
+    noclk_shiftreg((i+1).U) := noclk_shiftreg(i.U)
   }
-  noclk_shiftreg(0.U) := data_noclk
+  noclk_shiftreg(0.U) := io.data_noclk
   
 
-  val data_sum = RegInit(0.S(log2Up(shift_bits*2).W))			// Could be +/- 40
+  val data_sum = RegInit(0.S(log2Up(shift_bits*2).W))           // Could be +/- 40
   val backup_sum = RegInit(0.S(log2Up(shift_bits*2).W))   // Could be +/- 40, used for extra_bit
-  val mid_sum = RegInit(0.S(log2Up(shift_bits).W))				// Could be +/- 20
+  val mid_sum = RegInit(0.S(log2Up(shift_bits).W))              // Could be +/- 20
   val sym_period_counter = RegInit(0.U(log2Up(shift_bits).W))
   val shiftreg_ptr = RegInit(0.U(log2Up(shift_bits).W))   // Initialized to point to noclk_shiftreg(0.U)
   val last_bit = RegInit(0.U(1.W))
@@ -32,8 +30,8 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
   val first_cycle_done = RegInit(false.B)
 
   sym_period_counter := Mux(sym_period_counter === (shift_bits-1).U,
-							0.U,
-							sym_period_counter + 1.U)
+                            0.U,
+                            sym_period_counter + 1.U)
 
 
   when (sym_period_counter =/= 0.U) {
