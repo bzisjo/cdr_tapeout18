@@ -8,7 +8,7 @@ import chisel3.util._
 class MF(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t1Q_Seq: Seq[SInt], t2I_Seq: Seq[SInt], t2Q_Seq: Seq[SInt]) extends Module{
     val io = IO(new Bundle{
         val isig = Input(SInt(adc_width.W))
-        val qsig = Input(SInt(adc_width.W))
+        // val qsig = Input(SInt(adc_width.W))
         val data_noclk = Output(UInt(1.W))
     })
 
@@ -21,7 +21,7 @@ class MF(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t1Q_
     val mf1 = Wire(SInt((adc_width*6).W))
 
     template1I.io.in := io.isig
-    template1Q.io.in := io.qsig
+    template1Q.io.in := io.isig
     I1 := template1I.io.out
     Q1 := template1Q.io.out
     mf1 := I1*I1 + Q1*Q1
@@ -36,7 +36,7 @@ class MF(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t1Q_
     val mf2 = Wire(SInt((adc_width*6).W))
 
     template2I.io.in := io.isig
-    template2Q.io.in := io.qsig
+    template2Q.io.in := io.isig
     I2 := template2I.io.out
     Q2 := template2Q.io.out
     mf2 := I2*I2 + Q2*Q2
