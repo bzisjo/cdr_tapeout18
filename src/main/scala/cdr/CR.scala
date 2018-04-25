@@ -19,11 +19,11 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
   noclk_shiftreg(0.U) := io.data_noclk
   
 
-  val data_sum = RegInit(0.S(log2Up(shift_bits*2).W))           // Could be +/- 40
-  val backup_sum = RegInit(0.S(log2Up(shift_bits*2).W))   // Could be +/- 40, used for extra_bit
-  val mid_sum = RegInit(0.S(log2Up(shift_bits).W))              // Could be +/- 20
-  val sym_period_counter = RegInit(0.U(log2Up(shift_bits).W))
-  val shiftreg_ptr = RegInit(0.U(log2Up(shift_bits).W))   // Initialized to point to noclk_shiftreg(0.U)
+  val data_sum = RegInit(0.S(log2Ceil(shift_bits*2).W))           // Could be +/- 40
+  val backup_sum = RegInit(0.S(log2Ceil(shift_bits*2).W))   // Could be +/- 40, used for extra_bit
+  val mid_sum = RegInit(0.S(log2Ceil(shift_bits).W))              // Could be +/- 20
+  val sym_period_counter = RegInit(0.U(log2Ceil(shift_bits).W))
+  val shiftreg_ptr = RegInit(0.U(log2Ceil(shift_bits).W))   // Initialized to point to noclk_shiftreg(0.U)
   val last_bit = RegInit(0.U(1.W))
   val recovered_bit = Wire(UInt(1.W))
   val backup_sum_bit = RegInit(0.U(1.W))
