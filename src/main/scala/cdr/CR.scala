@@ -91,7 +91,7 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
 
   // Output
   val s_idle :: s_regular :: s_extra_bit :: s_extra_pause :: Nil = Enum(4)
-  val state = Reg(init = s_idle)
+  val state = RegInit(s_idle)
 
   io.data_out.bits := 0.U
   io.data_out.valid := false.B
@@ -103,35 +103,33 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
     // Current state output
     io.data_out.bits := 0.U
     io.data_out.valid := false.B
-  }
-
-  when (state === s_regular) {
+  } .elsewhen(state === s_regular) {
     // Next-state logic
     when (io.data_out.ready) {
       when (extra_bit === 1.U) {state := s_extra_bit}
       .elsewhen (extra_pause === 1.U) {state := s_extra_pause}
       .otherwise {state := s_idle}
     }
-
     // Current state output
     io.data_out.bits := recovered_bit
     io.data_out.valid := true.B
-  }
-
-  when (state === s_extra_bit) {
+  } .elsewhen (state === s_extra_bit) {
     // Next-state logic
     when (io.data_out.ready) {state := s_idle}
 
     // Current state output
     io.data_out.bits := backup_sum_bit
     io.data_out.valid := true.B
-  }
-  when (state === s_extra_pause) {
+  } .elsewhen (state === s_extra_pause) {
     // Next-state logic
     when (sym_period_counter === 0.U) {state := s_idle}
 
     // Current state output
     io.data_out.bits := recovered_bit
+    io.data_out.valid := false.B
+  } .otherwise {
+    state := s_idle
+    io.data_out.bits := 0.U
     io.data_out.valid := false.B
   }
 }
