@@ -8,11 +8,13 @@ class MFCDR(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t
     val io = IO(new Bundle{
         val isig = Input(SInt(adc_width.W))
         // val qsig = Input(SInt(adc_width.W))
+        // Let us bypass the MF output straight into the core, if CR has issues
+        val cr_bypass = Output(UInt(1.W))
         val data_out = Decoupled(UInt(1.W))
     })
 
     val demodulator = Module(new MF(adc_width = adc_width, template_length = template_length, t1I_Seq = t1I_Seq, t1Q_Seq = t1Q_Seq, t2I_Seq = t2I_Seq, t2Q_Seq = t2Q_Seq))
-
+    io.cr_bypass := demodulator.io.data_noclk
     val cr_module = Module(new CR(shift_bits = shift_bits, CR_adjust_res = CR_adjust_res))
 
     demodulator.io.isig := io.isig
