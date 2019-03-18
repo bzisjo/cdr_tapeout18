@@ -11,10 +11,9 @@ import scala.io.Source
 
 class MFCDRTester(c: MFCDR) extends PeekPokeTester(c) {
     // We need the quantized, filtered/image rejected I and Q signals
-    val isig_file = "./src/test/scala/cdr/I_out.csv"
-    // val qsig_file = "./src/test/scala/cdr/Q_out.csv"
+    val isig_file = "./src/test/scala/cdr/test/I_out_noImage.csv"
     val isig = Source.fromFile(isig_file).getLines().next.split(",").map(_.trim).map(_.toInt).toSeq
-    // val qsig = Source.fromFile(qsig_file).getLines().next.split(",").map(_.trim).map(_.toInt).toSeq
+
 
     var data_out_demod = Seq[Int]()
 
@@ -23,7 +22,7 @@ class MFCDRTester(c: MFCDR) extends PeekPokeTester(c) {
 
     for (v <- 1 until isig.length) {
         poke(c.io.isig, isig(v))
-        // poke(c.io.qsig, qsig(v))
+        //poke(c.io.qsig, qsig(v))
         poke(c.io.data_out.ready, true.B)
         if(peek(c.io.data_out.valid) == 1) {
             data_out_demod = data_out_demod :+ peek(c.io.data_out.bits).toInt
@@ -31,7 +30,7 @@ class MFCDRTester(c: MFCDR) extends PeekPokeTester(c) {
         step(1)
     }
 
-    val writer = new PrintWriter(new File("data_out_demod.csv"))
+    val writer = new PrintWriter(new File("./src/test/scala/cdr/test/data_out_demod_mfcdr.csv"))
     for(v <- data_out_demod) {
         writer.write(v.toString+"\n")
     }

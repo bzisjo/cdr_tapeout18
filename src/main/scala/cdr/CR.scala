@@ -20,10 +20,10 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
   
 
   val data_sum = RegInit(0.S(log2Ceil(shift_bits*2).W))           // Could be +/- 40
-  val backup_sum = RegInit(0.S(log2Ceil(shift_bits*2).W))   // Could be +/- 40, used for extra_bit
+  val backup_sum = RegInit(0.S(log2Ceil(shift_bits*2).W))         // Could be +/- 40, used for extra_bit
   val mid_sum = RegInit(0.S(log2Ceil(shift_bits).W))              // Could be +/- 20
-  val sym_period_counter = RegInit(0.U(log2Ceil(shift_bits).W))
-  val shiftreg_ptr = RegInit(0.U(log2Ceil(shift_bits).W))   // Initialized to point to noclk_shiftreg(0.U)
+  val sym_period_counter = RegInit(0.U(log2Ceil(shift_bits).W))   // Counter for 40 symbol period
+  val shiftreg_ptr = RegInit(0.U(log2Ceil(shift_bits).W))         // Initialized to point to noclk_shiftreg(0.U)
   val last_bit = RegInit(0.U(1.W))
   val recovered_bit = Wire(UInt(1.W))
   val backup_sum_bit = RegInit(0.U(1.W))
@@ -33,7 +33,7 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
                             0.U,
                             sym_period_counter + 1.U)
 
-
+  //data_sum accumulation
   when (sym_period_counter =/= 0.U) {
     data_sum := data_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
     backup_sum := backup_sum + Mux(noclk_shiftreg(0.U) === 1.U, 1.S, -1.S)
@@ -42,24 +42,30 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
     backup_sum := Mux(noclk_shiftreg(0.U) === 1.U, 1.S, -1.S)
   }
 
+  //mid_sum accumulation
   when (sym_period_counter === 0.U) {
     mid_sum := Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   } .elsewhen (sym_period_counter < ((shift_bits)/2).U) {
     mid_sum := mid_sum + Mux(noclk_shiftreg(shiftreg_ptr) === 1.U, 1.S, -1.S)
   } .otherwise {
-    mid_sum := mid_sum                                     // Redundant. For illustrative purposes
+    mid_sum := mid_sum
   }
 
-  last_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.S).asUInt, last_bit)          // This is a register to store the last bit
-  recovered_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.S).asUInt, last_bit)     // This is a wire that outputs the last recovered bit at the right clock period
+
+  // the register to store the last bit
+  last_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.S).asUInt, last_bit)
+  // the  wire that outputs the last recovered bit at the right clock period
+  recovered_bit := Mux(sym_period_counter === 0.U, (data_sum > 0.S).asUInt, last_bit)
 
   backup_sum_bit := Mux(sym_period_counter === 0.U, (backup_sum > 0.S).asUInt, backup_sum_bit)
+
+
 
   // These commented lines contain an incomplete clock deviation correction algorithm
   val extra_bit = RegInit(0.U(1.W))
   val extra_pause = RegInit(0.U(1.W))
 
-  first_cycle_done := first_cycle_done || sym_period_counter === (shift_bits-1).U         // Don't want to trigger following logic before first cycle
+  first_cycle_done := first_cycle_done || sym_period_counter === (shift_bits-1).U     // Don't want to trigger following logic before first cycle
 
   when (first_cycle_done && sym_period_counter === 0.U) {
     extra_bit := 0.U
@@ -103,6 +109,7 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
     // Current state output
     io.data_out.bits := 0.U
     io.data_out.valid := false.B
+
   } .elsewhen(state === s_regular) {
     // Next-state logic
     when (io.data_out.ready) {
@@ -113,6 +120,7 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
     // Current state output
     io.data_out.bits := recovered_bit
     io.data_out.valid := true.B
+
   } .elsewhen (state === s_extra_bit) {
     // Next-state logic
     when (io.data_out.ready) {state := s_idle}
@@ -120,6 +128,7 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
     // Current state output
     io.data_out.bits := backup_sum_bit
     io.data_out.valid := true.B
+
   } .elsewhen (state === s_extra_pause) {
     // Next-state logic
     when (sym_period_counter === 0.U) {state := s_idle}
@@ -127,6 +136,7 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
     // Current state output
     io.data_out.bits := recovered_bit
     io.data_out.valid := false.B
+
   } .otherwise {
     state := s_idle
     io.data_out.bits := 0.U

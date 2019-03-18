@@ -6,10 +6,6 @@ package cdr
 import chisel3._
 import chisel3.util._
 // import chisel3.experimental.FixedPoint
-// // import dsptools._
-// import dsptools.numbers._
-// import dsptools.numbers.implicits._
-// import dsptools.{DspContext, Saturate}
 
 
 class CDR(val adc_width: Int = 5, val space_counter_width: Int = 5, val shift_bits: Int = 40, val CR_adjust_res: Int = 4) extends Module{

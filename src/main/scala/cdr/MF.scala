@@ -8,7 +8,6 @@ import chisel3.util._
 class MF(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t1Q_Seq: Seq[SInt], t2I_Seq: Seq[SInt], t2Q_Seq: Seq[SInt]) extends Module{
     val io = IO(new Bundle{
         val isig = Input(SInt(adc_width.W))
-        // val qsig = Input(SInt(adc_width.W))
         val data_noclk = Output(UInt(1.W))
     })
 
