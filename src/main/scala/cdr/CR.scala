@@ -60,32 +60,35 @@ class CR(shift_bits: Int = 40, CR_adjust_res: Int = 4) extends Module{
   backup_sum_bit := Mux(sym_period_counter === 0.U, (backup_sum > 0.S).asUInt, backup_sum_bit)
 
 
-
-  // These commented lines contain an incomplete clock deviation correction algorithm
+  // Clock deviation correction algorithm (how to move the shiftreg_ptr)
   val extra_bit = RegInit(0.U(1.W))
   val extra_pause = RegInit(0.U(1.W))
 
-  first_cycle_done := first_cycle_done || sym_period_counter === (shift_bits-1).U     // Don't want to trigger following logic before first cycle
+  // Don't want to trigger following logic before first cycle done
+  first_cycle_done := first_cycle_done || sym_period_counter === (shift_bits-1).U
+
 
   when (first_cycle_done && sym_period_counter === 0.U) {
     extra_bit := 0.U
     extra_pause := 0.U
-    when ((data_sum > 0.S) && (mid_sum > data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum < data_sum - mid_sum)) {
+    when (((data_sum > 0.S) && (mid_sum > data_sum - mid_sum)) || ((data_sum <= 0.S) && (mid_sum < data_sum - mid_sum))) {
       when ((shiftreg_ptr + CR_adjust_res.U > (shift_bits-1).U)) {
         when (extra_pause === 0.U) {
           shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U - shift_bits.U
-          extra_bit := 1.U                                 // Need to output what's already in noclk_shiftreg
+          // Need to output what's already in noclk_shiftreg immediately
+          extra_bit := 1.U
           // printf(p"shifted+ with extra_bit\n")
         }
       } .otherwise {
         shiftreg_ptr := shiftreg_ptr + CR_adjust_res.U
         // printf(p"shifted+\n")
       }
-    } .elsewhen ((data_sum > 0.S) && (mid_sum < data_sum - mid_sum) || (data_sum <= 0.S) && (mid_sum > data_sum - mid_sum)) {
+    } .elsewhen (((data_sum > 0.S) && (mid_sum < data_sum - mid_sum)) || ((data_sum <= 0.S) && (mid_sum > data_sum - mid_sum))) {
       when ((shiftreg_ptr < CR_adjust_res.U)) {
         when (extra_bit === 0.U){
           shiftreg_ptr := shiftreg_ptr + shift_bits.U - CR_adjust_res.U
-          extra_pause := 1.U                               // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
+          // Need to not output anything for one symbol length, since data in noclk_shiftreg is already outputted
+          extra_pause := 1.U
           // printf(p"shifted- with extra_pause\n")
         }
       } .otherwise {

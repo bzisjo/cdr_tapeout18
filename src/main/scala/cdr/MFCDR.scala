@@ -11,6 +11,7 @@ class MFCDR(adc_width: Int = 5, template_length: Int = 40, t1I_Seq: Seq[SInt], t
         // Let us bypass the MF output straight into the core, if CR has issues
         val cr_bypass = Output(UInt(1.W))
 
+
         val data_out = Decoupled(UInt(1.W))
     })
 
